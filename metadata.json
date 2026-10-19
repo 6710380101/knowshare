@@ -1,0 +1,8 @@
+{
+  "name": "คลังปัญญา (KlangPanya)",
+  "description": "เว็บแอปพลิเคชันสำหรับรวบรวมและแบ่งปันความรู้สำหรับนักเรียน นักศึกษา และครู รองรับการค้นหา จัดหมวดหมู่ รายการโปรด และระบบจัดการความปลอดภัย",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

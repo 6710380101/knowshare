@@ -1,0 +1,137 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 't.gan5140@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isModerator() {
+      return isAdmin() || (
+        isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator'
+      );
+    }
+
+    function isNotSuspended() {
+      return !isSignedIn() || !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isSuspended', false) != true;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId &&
+        isValidId(userId) &&
+        incoming().email is string &&
+        incoming().displayName is string &&
+        incoming().displayName.size() <= 100 &&
+        (incoming().role == 'member' || isAdmin()) &&
+        incoming().get('isSuspended', false) == false;
+      allow update: if (
+        isOwner(userId) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt'])
+      ) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Resources Collection
+    match /resources/{resourceId} {
+      allow read: if existing().get('isHidden', false) != true || isModerator() || (isSignedIn() && existing().authorId == request.auth.uid);
+      allow create: if isSignedIn() && isNotSuspended() && isValidId(resourceId) &&
+        incoming().title is string && incoming().title.size() >= 3 && incoming().title.size() <= 200 &&
+        incoming().description is string && incoming().description.size() <= 1000 &&
+        incoming().category is string &&
+        incoming().educationLevel is string &&
+        incoming().mediaType is string &&
+        incoming().authorId == request.auth.uid &&
+        incoming().get('isHidden', false) == false;
+      allow update: if (
+        isSignedIn() && isNotSuspended() &&
+        existing().authorId == request.auth.uid &&
+        incoming().authorId == existing().authorId &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'description', 'content', 'category', 'educationLevel', 
+          'mediaType', 'externalUrl', 'attachmentUrl', 'tags', 'updatedAt', 
+          'viewCount', 'favoriteCount'
+        ])
+      ) || (
+        isModerator() &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'isHidden', 'title', 'description', 'content', 'category', 
+          'educationLevel', 'mediaType', 'externalUrl', 'attachmentUrl', 
+          'tags', 'updatedAt', 'viewCount', 'favoriteCount'
+        ])
+      ) || (
+        // Allow public/member view count and favorite count increments
+        incoming().diff(existing()).affectedKeys().hasOnly(['viewCount', 'favoriteCount', 'updatedAt'])
+      );
+      allow delete: if (isSignedIn() && existing().authorId == request.auth.uid) || isModerator();
+    }
+
+    // Favorites Collection
+    match /favorites/{favoriteId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(favoriteId) &&
+        incoming().userId == request.auth.uid &&
+        incoming().resourceId is string;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // Reports Collection
+    match /reports/{reportId} {
+      allow read: if isModerator() || (isSignedIn() && resource.data.reporterId == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(reportId) &&
+        incoming().reporterId == request.auth.uid &&
+        incoming().resourceId is string &&
+        incoming().reason is string &&
+        incoming().status == 'pending';
+      allow update: if isModerator();
+      allow delete: if isAdmin();
+    }
+
+    // Moderation Logs Collection
+    match /moderationLogs/{logId} {
+      allow read: if isModerator();
+      allow create: if isModerator() && isValidId(logId) && incoming().performedBy == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Settings Collection
+    match /settings/general {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

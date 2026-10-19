@@ -1,0 +1,340 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "User profile with role-based access control and account status",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "User display name"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["member", "moderator", "admin"],
+          "description": "Access control role"
+        },
+        "isSuspended": {
+          "type": "boolean",
+          "description": "Whether the user account is suspended by an admin"
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Avatar image URL"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Account creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last profile update timestamp"
+        }
+      },
+      "required": ["email", "displayName", "role"]
+    },
+    "resources": {
+      "title": "Educational Resource",
+      "description": "Shared educational resource or study material",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 200,
+          "description": "Resource title"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Short summary or description"
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 20000,
+          "description": "Detailed notes, markdown, or lesson content"
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Subject category"
+        },
+        "educationLevel": {
+          "type": "string",
+          "enum": ["primary", "secondary", "higher_ed", "general"],
+          "description": "Target educational grade/level"
+        },
+        "mediaType": {
+          "type": "string",
+          "enum": ["pdf", "video", "article", "slides", "course", "other"],
+          "description": "Format/media type"
+        },
+        "externalUrl": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Link to video, slide, or external learning material"
+        },
+        "attachmentUrl": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Direct file or document attachment URL"
+        },
+        "authorId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Firebase Auth UID of the creator"
+        },
+        "authorName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Display name of author"
+        },
+        "authorEmail": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Email of author"
+        },
+        "isHidden": {
+          "type": "boolean",
+          "description": "Flag set by moderators to hide violating resource"
+        },
+        "viewCount": {
+          "type": "number",
+          "description": "Number of times viewed"
+        },
+        "favoriteCount": {
+          "type": "number",
+          "description": "Total bookmark count"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Topic tags"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp"
+        }
+      },
+      "required": ["title", "description", "category", "educationLevel", "mediaType", "authorId"]
+    },
+    "favorites": {
+      "title": "Favorite Resource Bookmark",
+      "description": "Per-user bookmark for a learning resource",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "User UID who favorited"
+        },
+        "resourceId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Target resource ID"
+        },
+        "resourceTitle": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Cached resource title for quick listing"
+        },
+        "resourceCategory": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Cached resource category"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["userId", "resourceId"]
+    },
+    "reports": {
+      "title": "Resource Report",
+      "description": "Report filed against inappropriate or broken resources",
+      "type": "object",
+      "properties": {
+        "resourceId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Reported resource document ID"
+        },
+        "resourceTitle": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Title of reported resource"
+        },
+        "reporterId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Reporter UID"
+        },
+        "reporterEmail": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Reporter email"
+        },
+        "reason": {
+          "type": "string",
+          "enum": ["broken_link", "copyright", "inappropriate", "incorrect_info", "other"],
+          "description": "Reason category for report"
+        },
+        "details": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Explanation from reporter"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "resolved", "dismissed"],
+          "description": "Current status in moderation queue"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Report submission timestamp"
+        },
+        "resolvedAt": {
+          "type": "string",
+          "description": "Timestamp when reviewed"
+        },
+        "resolvedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Admin UID who resolved"
+        }
+      },
+      "required": ["resourceId", "reporterId", "reason", "status"]
+    },
+    "moderationLogs": {
+      "title": "Moderation Log",
+      "description": "Audit trail of moderator and administrator actions",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Action performed (e.g., hide_resource, delete_resource, change_role, suspend_user)"
+        },
+        "targetType": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Entity affected (resource, user, report)"
+        },
+        "targetId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "ID of affected entity"
+        },
+        "details": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Summary of action"
+        },
+        "performedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Admin UID"
+        },
+        "performedByEmail": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Admin email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Log timestamp"
+        }
+      },
+      "required": ["action", "targetType", "targetId", "performedBy"]
+    },
+    "settings": {
+      "title": "Site Settings",
+      "description": "System-wide settings configurable through admin dashboard",
+      "type": "object",
+      "properties": {
+        "siteTitle": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Website title"
+        },
+        "siteDescription": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Website subtitle or slogan"
+        },
+        "announcement": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Global banner announcement"
+        },
+        "categories": {
+          "type": "array",
+          "description": "Dynamic list of available subject categories"
+        },
+        "educationLevels": {
+          "type": "array",
+          "description": "Educational levels list"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp"
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Admin UID who saved changes"
+        }
+      },
+      "required": ["siteTitle", "siteDescription"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/users"
+      },
+      "description": "User profile with role and suspension status"
+    },
+    "/resources/{resourceId}": {
+      "schema": {
+        "$ref": "#/entities/resources"
+      },
+      "description": "Public educational materials and community posts"
+    },
+    "/favorites/{favoriteId}": {
+      "schema": {
+        "$ref": "#/entities/favorites"
+      },
+      "description": "User bookmarks keyed by user_resource"
+    },
+    "/reports/{reportId}": {
+      "schema": {
+        "$ref": "#/entities/reports"
+      },
+      "description": "Content violation reports for moderator review"
+    },
+    "/moderationLogs/{logId}": {
+      "schema": {
+        "$ref": "#/entities/moderationLogs"
+      },
+      "description": "Audit logs of moderator/admin activity"
+    },
+    "/settings/general": {
+      "schema": {
+        "$ref": "#/entities/settings"
+      },
+      "description": "Global website configuration and dynamic categories"
+    }
+  }
+}
